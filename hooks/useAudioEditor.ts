@@ -44,7 +44,14 @@ export const useAudioEditor = () => {
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+      const audio = audioRef.current;
+      if (audio.currentTime >= audio.duration) {
+        setCurrentTime(0);
+        setIsPlaying(false);
+        audio.pause();
+      } else {
+        setCurrentTime(audio.currentTime);
+      }
     }
   };
 
