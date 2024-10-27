@@ -1,105 +1,59 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import WaveSurfer from 'wavesurfer.js';
+import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js'
 
 interface WaveformVisualizerProps {
   audioUrl: string;
-  audioContext: AudioContext;
-  currentTime: number;
-  duration: number;
-  onSeek: (time: number) => void;
+  wavesurfer: WaveSurfer | null;
+  setWavesurfer: (ws: WaveSurfer | null) => void;
 }
 
-const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audioContext, currentTime, duration, onSeek }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [waveformData, setWaveformData] = useState<number[]>([]);
+const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
+  audioUrl,
+  wavesurfer,
+  setWavesurfer,
+}) => {
+  const waveformRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const analyzeAndDrawWaveform = async () => {
-      const data = await analyzeAudio(audioUrl);
-      setWaveformData(data);
-    };
+    if (waveformRef.current && !wavesurfer) {
+      const ws = WaveSurfer.create({
+        container: waveformRef.current,
+        waveColor: '#4A90E2',
+        progressColor: '#2C5282',
+        cursorColor: '#2C5282',
+        barWidth: 2,
+        barRadius: 3,
+        height: 100,
+        normalize: true,
+        plugins: [TimelinePlugin.create()],
+      });
 
-    analyzeAndDrawWaveform();
-  }, [audioUrl, audioContext]);
+      ws.on('finish', () => {
+        ws.pause();
+        ws.seekTo(0);
+      });
 
-  useEffect(() => {
-    drawWaveform();
-  }, [currentTime, waveformData]);
+      setWavesurfer(ws);
 
-  const analyzeAudio = async (audioUrl: string): Promise<number[]> => {
-    const response = await fetch(audioUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    const channelData = audioBuffer.getChannelData(0);
-    const samples = 1000;
-    const blockSize = Math.floor(channelData.length / samples);
-    const waveform = [];
-
-    for (let i = 0; i < samples; i++) {
-      const start = i * blockSize;
-      let sum = 0;
-      for (let j = 0; j < blockSize; j++) {
-        sum += Math.abs(channelData[start + j]);
-      }
-      waveform.push(sum / blockSize);
-    }
-
-    return waveform;
-  };
-
-  const drawWaveform = () => {
-    if (canvasRef.current && waveformData.length > 0) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw waveform
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height / 2);
-        waveformData.forEach((point, index) => {
-          const x = (index / waveformData.length) * canvas.width;
-          const y = (1 - point) * canvas.height;
-          ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = '#3B82F6';
-        ctx.stroke();
-        
-        // Draw progress indicator
-        if (duration > 0) {
-          const progress = currentTime / duration;
-          const x = progress * canvas.width;
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, canvas.height);
-          ctx.strokeStyle = '#EF4444';
-          ctx.lineWidth = 2;
-          ctx.stroke();
+      return () => {
+        if (ws) {
+          ws.destroy();
         }
-      }
+        setWavesurfer(null);
+      };
     }
-  };
+  }, [setWavesurfer]);
 
-  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const clickedTime = (x / rect.width) * duration;
-      onSeek(clickedTime);
+  useEffect(() => {
+    if (wavesurfer && audioUrl) {
+      wavesurfer.load(audioUrl);
     }
-  };
+  }, [wavesurfer, audioUrl]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      width={800}
-      height={100}
-      className="w-full h-24 mb-4 cursor-pointer"
-      onClick={handleClick}
-    />
-  );
+  return <div ref={waveformRef} />;
 };
 
 export default WaveformVisualizer;

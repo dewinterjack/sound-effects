@@ -1,24 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import WaveSurfer from 'wavesurfer.js';
 
 export const useAudioEditor = () => {
   const [audioFile, setAudioFile] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    const audioContext = new AudioContext();
-    setAudioContext(audioContext);
-
-    return () => {
-      audioContext.close();
-    };
-  }, []);
+    wavesurfer?.on('play', () => {
+      setIsPlaying(true);
+    });
+    wavesurfer?.on('pause', () => {
+      setIsPlaying(false);
+    });
+    wavesurfer?.on('ready', () => {
+      setDuration(wavesurfer.getDuration());
+    });
+    wavesurfer?.on('audioprocess', () => {
+      setCurrentTime(wavesurfer.getCurrentTime());
+    });
+    wavesurfer?.on('seeking', () => {
+      setCurrentTime(wavesurfer.getCurrentTime());
+    });
+  }, [wavesurfer]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -26,72 +34,35 @@ export const useAudioEditor = () => {
       const url = URL.createObjectURL(file);
       setAudioFile(url);
       setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-    }
-  };
-
-  const togglePlayPause = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
+      if (wavesurfer) {
+        wavesurfer.load(url);
       }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      const audio = audioRef.current;
-      if (audio.currentTime >= audio.duration) {
-        setCurrentTime(0);
-        setIsPlaying(false);
-        audio.pause();
-      } else {
-        setCurrentTime(audio.currentTime);
-      }
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
-    }
-  };
-
-  const handleSeek = (time: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-      setCurrentTime(time);
     }
   };
 
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
+    if (wavesurfer) {
+      wavesurfer.setVolume(newVolume);
     }
   };
 
   const handlePlaybackRateChange = (newRate: number) => {
     setPlaybackRate(newRate);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = newRate;
+    if (wavesurfer) {
+      wavesurfer.setPlaybackRate(newRate);
     }
   };
 
   const handleReset = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      setCurrentTime(0);
+    if (wavesurfer) {
+      wavesurfer.seekTo(0);
+      wavesurfer.setVolume(1);
+      wavesurfer.setPlaybackRate(1);
       setVolume(1);
       setPlaybackRate(1);
-      audioRef.current.volume = 1;
-      audioRef.current.playbackRate = 1;
       if (isPlaying) {
-        audioRef.current.pause();
+        wavesurfer.pause();
         setIsPlaying(false);
       }
     }
@@ -118,21 +89,17 @@ export const useAudioEditor = () => {
   return {
     audioFile,
     isPlaying,
-    currentTime,
-    duration,
     volume,
     playbackRate,
-    audioContext,
-    audioRef,
+    wavesurfer,
+    setWavesurfer,
     handleFileUpload,
-    togglePlayPause,
-    handleTimeUpdate,
-    handleLoadedMetadata,
-    handleSeek,
     handleVolumeChange,
     handlePlaybackRateChange,
     handleReset,
     formatTime,
     downloadAudio,
+    currentTime,
+    duration,
   };
 };

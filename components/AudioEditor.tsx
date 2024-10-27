@@ -1,24 +1,20 @@
 "use client"
 
-import { PlayCircle, PauseCircle, RotateCcw, Download } from 'lucide-react';
+import { RotateCcw, Download, Pause, Play } from 'lucide-react';
 import WaveformVisualizer from '@/components/WaveformVisualizer';
 import { useAudioEditor } from '@/hooks/useAudioEditor';
 
 const AudioEditor = () => {
   const {
     audioFile,
-    isPlaying,
-    currentTime,
-    duration,
     volume,
     playbackRate,
-    audioContext,
-    audioRef,
+    wavesurfer,
+    isPlaying,
+    duration,
+    currentTime,
+    setWavesurfer,
     handleFileUpload,
-    togglePlayPause,
-    handleTimeUpdate,
-    handleLoadedMetadata,
-    handleSeek,
     handleVolumeChange,
     handlePlaybackRateChange,
     handleReset,
@@ -41,44 +37,26 @@ const AudioEditor = () => {
           />
         </div>
 
-        {audioFile && audioContext && (
+        {audioFile && (
           <>
             <WaveformVisualizer 
-              audioUrl={audioFile} 
-              audioContext={audioContext} 
-              currentTime={currentTime}
-              duration={duration}
-              onSeek={handleSeek}
-            />
-
-            <audio
-              ref={audioRef}
-              src={audioFile}
-              onTimeUpdate={handleTimeUpdate}
-              onLoadedMetadata={handleLoadedMetadata}
-              className="hidden"
+              audioUrl={audioFile}
+              wavesurfer={wavesurfer}
+              setWavesurfer={setWavesurfer}
             />
 
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={togglePlayPause}
-                  className="p-2 rounded-full hover:bg-gray-100"
-                >
-                  {isPlaying ? 
-                    <PauseCircle className="w-8 h-8 text-blue-600" /> :
-                    <PlayCircle className="w-8 h-8 text-blue-600" />
-                  }
-                </button>
-                <button
-                  onClick={handleReset}
-                  className="p-2 rounded-full hover:bg-gray-100"
-                >
-                  <RotateCcw className="w-6 h-6 text-gray-600" />
-                </button>
-              </div>
+              <button onClick={() => wavesurfer?.playPause()} className="p-2 rounded-full hover:bg-gray-100">
+                {isPlaying ? <Pause className="w-6 h-6 text-gray-600" /> : <Play className="w-6 h-6 text-gray-600" />}
+              </button>
+              <button
+                onClick={handleReset}
+                className="p-2 rounded-full hover:bg-gray-100"
+              >
+                <RotateCcw className="w-6 h-6 text-gray-600" />
+              </button>
               <div className="text-sm text-gray-500">
-                {formatTime(currentTime)} / {formatTime(duration)}
+                {wavesurfer && formatTime(currentTime)} / {wavesurfer && formatTime(duration)}
               </div>
             </div>
 
