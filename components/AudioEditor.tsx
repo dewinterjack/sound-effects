@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, PauseCircle, RotateCcw, Download } from 'lucide-react';
+import WaveformVisualizer from './WaveformVisualizer';
 
 const AudioEditor = () => {
   const [audioFile, setAudioFile] = useState<string | null>(null);
@@ -10,9 +11,18 @@ const AudioEditor = () => {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    const context = new (window.AudioContext || window.webkitAudioContext)();
+    setAudioContext(context);
+
+    return () => {
+      context.close();
+    };
+  }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -22,10 +32,6 @@ const AudioEditor = () => {
       setIsPlaying(false);
       setCurrentTime(0);
       setDuration(0);
-      
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      }
     }
   };
 
@@ -123,8 +129,10 @@ const AudioEditor = () => {
           />
         </div>
 
-        {audioFile && (
+        {audioFile && audioContext && (
           <>
+            <WaveformVisualizer audioUrl={audioFile} audioContext={audioContext} />
+
             <audio
               ref={audioRef}
               src={audioFile}
