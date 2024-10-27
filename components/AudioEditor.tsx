@@ -55,7 +55,7 @@ const AudioEditor = () => {
               >
                 <RotateCcw className="w-6 h-6 text-gray-600" />
               </button>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 w-[200px] text-right">
                 {wavesurfer && formatTime(currentTime)} / {wavesurfer && formatTime(duration)}
               </div>
             </div>
