@@ -1,21 +1,31 @@
-import React, { useEffect, useRef } from 'react';
+"use client"
+
+import React, { useEffect, useRef, useState } from 'react';
 
 interface WaveformVisualizerProps {
   audioUrl: string;
   audioContext: AudioContext;
+  currentTime: number;
+  duration: number;
+  onSeek: (time: number) => void;
 }
 
-const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audioContext }) => {
+const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audioContext, currentTime, duration, onSeek }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [waveformData, setWaveformData] = useState<number[]>([]);
 
   useEffect(() => {
     const analyzeAndDrawWaveform = async () => {
-      const waveformData = await analyzeAudio(audioUrl);
-      drawWaveform(waveformData);
+      const data = await analyzeAudio(audioUrl);
+      setWaveformData(data);
     };
 
     analyzeAndDrawWaveform();
   }, [audioUrl, audioContext]);
+
+  useEffect(() => {
+    drawWaveform();
+  }, [currentTime, waveformData]);
 
   const analyzeAudio = async (audioUrl: string): Promise<number[]> => {
     const response = await fetch(audioUrl);
@@ -39,12 +49,14 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audio
     return waveform;
   };
 
-  const drawWaveform = (waveformData: number[]) => {
+  const drawWaveform = () => {
     if (canvasRef.current && waveformData.length > 0) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw waveform
         ctx.beginPath();
         ctx.moveTo(0, canvas.height / 2);
         waveformData.forEach((point, index) => {
@@ -54,7 +66,28 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audio
         });
         ctx.strokeStyle = '#3B82F6';
         ctx.stroke();
+        
+        // Draw progress indicator
+        if (duration > 0) {
+          const progress = currentTime / duration;
+          const x = progress * canvas.width;
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, canvas.height);
+          ctx.strokeStyle = '#EF4444';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
       }
+    }
+  };
+
+  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const clickedTime = (x / rect.width) * duration;
+      onSeek(clickedTime);
     }
   };
 
@@ -63,7 +96,8 @@ const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({ audioUrl, audio
       ref={canvasRef}
       width={800}
       height={100}
-      className="w-full h-24 mb-4"
+      className="w-full h-24 mb-4 cursor-pointer"
+      onClick={handleClick}
     />
   );
 };

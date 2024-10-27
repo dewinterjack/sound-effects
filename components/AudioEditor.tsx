@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { PlayCircle, PauseCircle, RotateCcw, Download } from 'lucide-react';
 import WaveformVisualizer from '@/components/WaveformVisualizer';
@@ -43,7 +43,13 @@ const AudioEditor = () => {
 
         {audioFile && audioContext && (
           <>
-            <WaveformVisualizer audioUrl={audioFile} audioContext={audioContext} />
+            <WaveformVisualizer 
+              audioUrl={audioFile} 
+              audioContext={audioContext} 
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={handleSeek}
+            />
 
             <audio
               ref={audioRef}
@@ -53,37 +59,26 @@ const AudioEditor = () => {
               className="hidden"
             />
 
-            <div className="flex items-center justify-center space-x-4">
-              <button
-                onClick={togglePlayPause}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                {isPlaying ? 
-                  <PauseCircle className="w-8 h-8 text-blue-600" /> :
-                  <PlayCircle className="w-8 h-8 text-blue-600" />
-                }
-              </button>
-              <button
-                onClick={handleReset}
-                className="p-2 rounded-full hover:bg-gray-100"
-              >
-                <RotateCcw className="w-6 h-6 text-gray-600" />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="0"
-                step="0.001"
-                max={duration}
-                value={currentTime}
-                onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-sm text-gray-500">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={togglePlayPause}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  {isPlaying ? 
+                    <PauseCircle className="w-8 h-8 text-blue-600" /> :
+                    <PlayCircle className="w-8 h-8 text-blue-600" />
+                  }
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="p-2 rounded-full hover:bg-gray-100"
+                >
+                  <RotateCcw className="w-6 h-6 text-gray-600" />
+                </button>
+              </div>
+              <div className="text-sm text-gray-500">
+                {formatTime(currentTime)} / {formatTime(duration)}
               </div>
             </div>
 
