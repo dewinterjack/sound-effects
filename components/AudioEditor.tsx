@@ -16,11 +16,11 @@ const AudioEditor = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const context = new (window.AudioContext || window.webkitAudioContext)();
-    setAudioContext(context);
+    const audioContext = new AudioContext();
+    setAudioContext(audioContext);
 
     return () => {
-      context.close();
+      audioContext.close();
     };
   }, []);
 
