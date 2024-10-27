@@ -100,7 +100,8 @@ const AudioEditor = () => {
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const milliseconds = Math.floor((time % 1) * 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
   };
 
   const downloadAudio = () => {
@@ -163,6 +164,7 @@ const AudioEditor = () => {
               <input
                 type="range"
                 min="0"
+                step="0.001"
                 max={duration}
                 value={currentTime}
                 onChange={handleSeek}
